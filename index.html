@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Mass Hysteria Calculator</title>
+	<link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+	<script
+	src="https://code.jquery.com/jquery-3.4.0.min.js"
+	integrity="sha256-BJeo0qm959uMBGb65z40ejJYGSgR7REI4+CW1fNKwOg="
+	crossorigin="anonymous"></script>
+	<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js"></script>
+
+	<style type="text/css">
+		body {
+			color: #fff;
+			background: #999 url(https://gamepedia.cursecdn.com/hearthstone_gamepedia/4/41/Mass_Hysteria_full.jpg?version=fa5d8cba5ae24062bf991b700e59a5b3) no-repeat fixed center;
+			font-weight: bold;
+				font-size: 125%;
+		}
+		.container {
+			background-color: rgba(153, 153, 153, 0.5);
+		}
+		.gamecard {
+			padding: 5px;
+			/*margin: 1px;*/
+			border: 2px solid #999;
+			width: 14%;
+			display: inline-block;
+		}
+		.gamecard input[type=number] {
+			width: 45% !important;
+			margin: 2px;
+			text-align: center;
+			border: 0px !important;
+			box-shadow: none !important;
+			padding-top: 4px;
+			padding-bottom: 4px;
+		}
+		.percent-div {
+			width: 0%;
+			height: 10px;
+			background-color: #933;
+		}
+		#mass-hysteria-card {
+			width: 200px;
+		}
+		hr {
+			border-color: #fff;
+		}
+	</style>
+</head>
+<body>
+
+<script type="text/javascript">
+	$(function() {
+		for(let i=0; i<2; i++) {
+			for(let j=0; j<7; j++) {
+				$('#card-div').append('<div class="gamecard"><input class="atk" type="number" value="0" min="0"><input class="hel" type="number" value="0" min="0"><p class="percent"></p><div class="percent-div"></div></div>');
+			}
+			$('#card-div').append('<hr>');
+		}
+
+		$('#sim-btn').click(doSim);
+
+		$('.hel').change(function() {
+			$(this).css('box-shadow', $(this).val()=='0' ? '2px 2px 0px #933' : '');
+		});
+		$('.hel').css('box-shadow', '2px 2px 0px #933');
+	});
+
+	let ATTACK = 0, HEALTH = 1;
+
+	function doSim() {
+		let cards = [];
+		// console.log(cards);
+		let atks = $('.gamecard').find('.atk');
+		let hels = $('.gamecard').find('.hel');
+		for (let i = 0; i < 14; i++) {
+			if(parseInt(hels[i].value)>0) { // remove 0 health cards
+				cards.push([parseInt(atks[i].value), parseInt(hels[i].value)]);
+			}
+		}
+
+		let timesDied = [];
+		for(let i=0; i<14; i++) {
+			timesDied[i] = 0;
+		}
+		
+		let numSims = $('#num-sim-input').val();
+		for(let i=0; i<numSims; i++) {
+			let cardsCopy = JSON.parse(JSON.stringify(cards) ) // new copy of cards we can modify, deep clone
+
+			let cardIdxs = Array.from(Array(cards.length).keys() );
+			cardIdxs = _.shuffle(cardIdxs);
+
+			// attacker is minion at index j, shuffled before start
+			// each minion attacks a random one that doesnt have 0 health
+			// minions with 0 health can't attack
+			// minions with 0 attack can still attack
+
+			// console.log('cardsCopy start ', cardsCopy);
+
+			// TODO: make sure at least 2 cards first, validate other inputs
+			for(let j=0; j<cardIdxs.length; j++) {
+				let atkIdx = cardIdxs[j];
+
+				// if all cards (except attacker) have no helath, then break
+				let willBreak = true;
+				for(let k=0; k<cardIdxs.length; k++) {
+					if(k==atkIdx) {
+						continue;
+					}
+					if(cardsCopy[k][HEALTH]!=0) {
+						willBreak = false;
+						break;
+					}
+				}
+				// console.log('willBreak ', willBreak);
+				if(willBreak) {
+					break;
+				}
+
+				// --------------------------------
+				if(cardsCopy[atkIdx][HEALTH]==0) { // skip cards with no attack
+					continue;
+				}
+
+				let defIdx;
+				do {
+					defIdx = Math.floor(Math.random() * cardIdxs.length);		
+				} while(defIdx == atkIdx || cardsCopy[defIdx][HEALTH]==0); // can't be attacker, can't have no health
+
+				// console.log('atkIdx, defIdx ', atkIdx, defIdx);
+				
+				// --------------------------------
+				// do fight
+				cardsCopy[defIdx][HEALTH] -= cardsCopy[atkIdx][ATTACK];
+				cardsCopy[atkIdx][HEALTH] -= cardsCopy[defIdx][ATTACK];
+				// if health less than 0, set to 0
+				cardsCopy[defIdx][HEALTH] = cardsCopy[defIdx][HEALTH] < 0 ? 0 : cardsCopy[defIdx][HEALTH];
+				cardsCopy[atkIdx][HEALTH] = cardsCopy[atkIdx][HEALTH] < 0 ? 0 : cardsCopy[atkIdx][HEALTH];
+				// console.log('atk health ', cardsCopy[atkIdx][HEALTH]);
+
+			} // end fight loop
+
+			// console.log('cardsCopy end ', cardsCopy);
+
+			// evalute which ones died
+			for(let j=0; j<cardIdxs.length; j++) {
+				//console.log(cardsCopy[cardIdxs[j] ][HEALTH]);
+				if(cardsCopy[cardIdxs[j] ][HEALTH]==0) {
+					timesDied[cardIdxs[j] ]++;
+				}
+			}
+
+		}
+		// console.log('timesDied ', timesDied);
+
+		let percentPs = $('.gamecard').find('.percent');
+		let percentDivs = $('.gamecard').find('.percent-div');
+		let simIdx = 0;
+		for (let DOMIdx=0; DOMIdx<14; DOMIdx++) {
+			if(parseInt(hels[DOMIdx].value)>0) { // dont do 0 health cards
+				let percentStr = Math.round(timesDied[simIdx]/numSims*10000)/100 + "%";
+				percentPs[DOMIdx].innerHTML = percentStr;
+				percentDivs[DOMIdx].style.width = percentStr;
+				simIdx++;
+			}
+		}
+
+	}
+
+
+</script>
+<div class="container text-center">
+	<h3>Mass Hysteria Calculator</h3>
+	<div id="card-div"></div>
+	Number of simulations (recommended between 1000 and 100,000): <input id="num-sim-input" class="form-control" type="number" value="10000" min="1000" max="100000">
+	<button id="sim-btn" class="btn btn-dark">Simulate!</button>
+	<hr>
+	<p>How it works:</p>
+	<ul>
+		<li>The odds of each card dying is displayed above</li>
+		<li>You can enter minions in any order, mass hysteria is randomized and minion position doesn't matter</li>
+		<li>Use the <kbd>Tab</kbd> key for quick entry on the fly</li>
+		<li>In a random order, each minion attacks another random minion</li>
+		<li>Minions with 0 attack, frozen or exhausted minions, and minions with "Can't attack" still attack</li>
+		<li>Minions with 0 health can't attack or be attacked</li>
+	</ul>
+	<p>Read about the card <a href="https://hearthstone.gamepedia.com/Mass_Hysteria" target="_blank">on gamepedia</a></p>
+	<img id="mass-hysteria-card" src="https://art.hearthstonejson.com/v1/render/latest/enUS/256x/TRL_258.png">
+	<p>Note: Mass hysteria, its design and artwork are copyright Blizzard Entertainment</p>
+</div>
+
+</body>
+</html>
