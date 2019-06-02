@@ -17,7 +17,7 @@
 			font-weight: bold;
 				font-size: 125%;
 		}
-		.container {
+		#body-container {
 			background-color: rgba(153, 153, 153, 0.5);
 		}
 		.gamecard {
@@ -70,7 +70,13 @@
 		$(document).keydown(function(evt) {
 			if(evt.which==13) // enter
 				doSim();
-		})
+		});
+
+		$('#reset-btn').click(function() {
+			$('.hel').val(0);
+			$('.atk').val(0);
+			doSim();
+		});
 	});
 
 	let ATTACK = 0, HEALTH = 1;
@@ -168,30 +174,36 @@
 		let percentPs = $('.gamecard').find('.percent');
 		let percentDivs = $('.gamecard').find('.percent-div');
 		let simIdx = 0;
+		let oddsAllDie = 1;
 		for (let DOMIdx=0; DOMIdx<14; DOMIdx++) {
 			if(parseInt(hels[DOMIdx].value)>0) { // dont do 0 health cards
-				let percentStr = Math.round(timesDied[simIdx]/numSims*10000)/100 + "%";
-				percentPs[DOMIdx].innerHTML = percentStr;
-				percentDivs[DOMIdx].style.width = percentStr;
+				let percentVal = Math.round(timesDied[simIdx]/numSims*10000)/100;
+				percentPs[DOMIdx].innerHTML = percentVal + '%';
+				percentDivs[DOMIdx].style.width = percentVal + '%';
+				oddsAllDie *= percentVal/100;
 				simIdx++;
 			}
 		}
+		$('#odds-all-die').html('Odds all die: ' + Math.round(oddsAllDie*10000)/100 + '%');
 
-	}
-
+	} // end doSim()
 
 </script>
-<div class="container text-center">
+<div id="body-container" class=" text-center">
 	<h3>Mass Hysteria Calculator</h3>
 	<div id="card-div"></div>
 	Number of simulations (recommended between 1000 and 100,000): <input id="num-sim-input" class="form-control" type="number" value="10000" min="1000" max="100000">
 	<button id="sim-btn" class="btn btn-dark">Simulate!</button>
+	<br>
+	<button id="reset-btn" class="btn btn-dark btn-sm">Reset</button>
+	<p id="odds-all-die"></p>
 	<hr>
 	<p>How it works:</p>
 	<ul>
 		<li>The odds of each card dying is displayed above</li>
 		<li>You can enter minions in any order, mass hysteria is randomized and minion position doesn't matter</li>
-		<li>Use the <kbd>Tab</kbd> key for quick entry on the fly</li>
+		<li>Use the <kbd>Tab</kbd> key for quick entry on the fly.</li>
+		<li>Use <kbd>Enter</kbd> to calculate as well.</li>
 		<li>In a random order, each minion attacks another random minion</li>
 		<li>Minions with 0 attack, frozen or exhausted minions, and minions with "Can't attack" still attack</li>
 		<li>Minions with 0 health can't attack or be attacked</li>
