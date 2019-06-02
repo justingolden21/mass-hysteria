@@ -71,6 +71,10 @@
 	let ATTACK = 0, HEALTH = 1;
 
 	function doSim() {
+
+		$('.gamecard').find('.percent-div').css('width', '0%');
+		$('.gamecard').find('.percent').html('');
+
 		let cards = [];
 		// console.log(cards);
 		let atks = $('.gamecard').find('.atk');
