@@ -66,6 +66,11 @@
 			$(this).css('box-shadow', $(this).val()=='0' ? '2px 2px 0px #933' : '');
 		});
 		$('.hel').css('box-shadow', '2px 2px 0px #933');
+
+		$(document).keydown(function(evt) {
+			if(evt.which==13) // enter
+				doSim();
+		})
 	});
 
 	let ATTACK = 0, HEALTH = 1;
